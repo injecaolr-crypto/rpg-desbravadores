@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG dos Desbravadores - Físico e Espiritual</title>
+    <!-- Tailwind CSS CDN para estilização visual -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteca de Leitura de QR Code via Câmara -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 12px;
+        }
+
+        @media print {
+            html, body {
+                background: white !important;
+                color: black !important;
+                width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+
+            .no-print { display: none !important; }
+
+            body * {
+                visibility: hidden;
+            }
+
+            #reportModal, #reportModal *, #printableReport, #printableReport * {
+                visibility: visible;
+            }
+
+            #reportModal {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                overflow: visible !important;
+            }
+
+            #printableReport {
+                position: relative !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 10px !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            #repQuestsContainer {
+                display: block !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            #repQuestsContainer > div {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin-bottom: 12px !important;
+            }
+
+            img {
+                max-height: 120px !important;
+                width: auto !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- Cabeçalho -->
+<header class="bg-amber-600 border-b-4 border-amber-800 shadow-lg p-4 sticky top-0 z-50 no-print">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-amber-900 shadow-inner text-amber-950 font-bold text-xl overflow-hidden">
+                <img src="LOGO.png" alt="Logotipo" class="w-full h-full object-cover rounded-full">
+            </div>
+            <div>
+                <h1 id="headerClassName" class="font-game text-xl md:text-2xl text-yellow-100 tracking-wider">CLASSE DE AMIGO</h1>
+                <p class="text-xs text-amber-200">Trilha Dividida: Físico & Espiritual</p>
+                <p class="text-[10px] text-yellow-100 font-semibold tracking-wide mt-0.5"><i class="fa-solid fa-crown text-yellow-300 mr-1"></i> Autor do Projeto: Líder Luiz Eduardo (CPF: 56128690297)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-amber-950/60 px-4 py-2.5 rounded-xl border border-amber-500/40 w-full md:w-auto justify-between shadow-inner">
+            <div class="cursor-pointer hover:opacity-80" onclick="openProfileModal()">
+                <span class="text-[10px] text-amber-300 block tracking-wider font-bold">DESBRAVADOR(A) <i class="fa-solid fa-pen-to-square ml-1"></i></span>
+                <span id="headerPlayerName" class="font-bold text-sm text-white">Carregando...</span>
+                <span id="headerPlayerAge" class="text-[10px] text-amber-200 block">10 anos</span>
+            </div>
+            <div class="border-l border-amber-700/60 pl-4">
+                <div class="flex justify-between items-center gap-2 mb-1">
+                    <span id="playerRank" class="text-xs font-game text-yellow-300 font-bold">Patente: Aspirante</span>
+                    <span class="text-xs text-amber-200 font-bold"><span id="playerXp">0</span> / <span id="nextLevelXp">500</span> XP</span>
+                </div>
+                <div class="w-32 bg-slate-800 h-2 rounded-full overflow-hidden border border-amber-700/50">
+                    <div id="xpBar" class="bg-gradient-to-r from-yellow-500 to-amber-400 h-full w-0 transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Conteúdo Principal -->
+<main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-6 flex flex-col items-center">
+
+    <!-- Seletor de Classes -->
+    <div class="w-full bg-slate-800 border-2 border-amber-600/60 rounded-2xl p-4 mb-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 no-print">
+        <div class="text-center md:text-left">
+            <h2 class="font-game text-sm text-amber-400 uppercase tracking-wider mb-1"><i class="fa-solid fa-graduation-cap"></i> Selecione a Classe</h2>
+            <p class="text-xs text-slate-300">Escolha o cartão de classe:</p>
+        </div>
+        <select id="classSelector" onchange="changeActiveClasse(this.value)" class="bg-slate-900 border-2 border-amber-500 text-yellow-300 font-bold text-xs px-4 py-2.5 rounded-xl focus:outline-none cursor-pointer shadow-inner">
+            <option value="amigo">Classe de Amigo & Avançada (10 anos)</option>
+            <option value="companheiro">Classe de Companheiro & Avançada (11 anos)</option>
+            <option value="pesquisador">Classe de Pesquisador & Avançada (12 anos)</option>
+            <option value="pioneiro">Classe de Pioneiro & Avançada (13 anos)</option>
+            <option value="excursionista">Classe de Excursionista & Avançada (14 anos)</option>
+            <option value="guia">Classe de Guia & Avançada (15 anos)</option>
+        </select>
+    </div>
+
+    <!-- Botões de Troca de Aba -->
+    <div class="w-full flex gap-3 mb-6 no-print">
+        <button id="btnTabFisico" onclick="switchTab('fisico')" class="flex-1 bg-amber-600 text-white font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-amber-500">
+            <i class="fa-solid fa-person-hiking text-sm"></i> Trilha Física e Prática
+        </button>
+        <button id="btnTabEspiritual" onclick="switchTab('espiritual')" class="flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-slate-700">
+            <i class="fa-solid fa-book-bible text-sm"></i> Trilha Espiritual e de Leitura
+        </button>
+    </div>
+
+    <!-- Ferramentas do Portfólio -->
+    <div class="w-full bg-slate-800/80 border border-slate-700 rounded-2xl p-4 mb-8 shadow-md flex flex-wrap gap-2 justify-center md:justify-between items-center no-print">
+        <span class="text-xs text-slate-300">Ferramentas:</span>
+        <div class="flex flex-wrap gap-2">
+            <button onclick="openProfileModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-2 shadow">
+                <i class="fa-solid fa-id-card"></i> Ficha & Identidade
+            </button>
+            <button onclick="openReportModal()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-2 shadow">
+                <i class="fa-solid fa-file-lines"></i> Relatório Geral
+            </button>
+            <button onclick="openAdvisorModal()" class="bg-slate-700 hover:bg-slate-600 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-key"></i> Líder
+            </button>
+        </div>
+    </div>
+
+    <!-- Área do Mapa com Linha de Trilha -->
+    <div class="w-full bg-slate-900/80 border-2 border-slate-700 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <div class="text-center mb-8 no-print">
+            <span id="mapTitleBadge" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"><i class="fa-solid fa-route"></i> Trilha Física e Prática</span>
+        </div>
+
+        <div id="questMap" class="flex flex-col items-center gap-8 relative py-6">
+            <div class="map-path-line no-print"></div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Modal de Ficha Cadastral -->
+<div id="profileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-slate-800 border-2 border-amber-600 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative my-8">
+        <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+        <h3 class="font-game text-xl text-amber-400 mb-1"><i class="fa-solid fa-address-card"></i> Ficha Cadastral do Desbravador</h3>
+        <p class="text-xs text-slate-300 mb-4">Preencha seus dados oficiais.</p>
+
+        <form id="profileForm" onsubmit="saveProfile(event)" class="space-y-3 text-xs">
+            <div>
+                <label class="block text-slate-300 font-semibold mb-1">Nome Completo *</label>
+                <input type="text" id="inputName" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Data de Nascimento (DD/MM/AAAA) *</label>
+                    <input type="text" id="inputDob" placeholder="Ex: 15/10/2014" required oninput="calculateAgeFromText(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Idade Calculada</label>
+                    <input type="text" id="inputAge" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-bold">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Nome do Pai</label>
+                    <input type="text" id="inputFather" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Nome da Mãe</label>
+                    <input type="text" id="inputMother" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">CPF</label>
+                    <input type="text" id="inputCpf" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Tipo Sanguíneo</label>
+                    <select id="inputBlood" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                        <option value="Não informado">Selecione...</option>
+                        <option value="A+">A+</option><option value="A-">A-</option>
+                        <option value="B+">B+</option><option value="B-">B-</option>
+                        <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                        <option value="O+">O+</option><option value="O-">O-</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-slate-300 font-semibold mb-1">Alergias ou Cuidados Médicos</label>
+                <input type="text" id="inputAllergies" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+                <label class="block text-slate-300 font-semibold mb-1">Endereço Residencial</label>
+                <input type="text" id="inputAddress" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <div class="pt-3 flex gap-3">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 rounded-xl transition">Fechar</button>
+                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-amber-600/30">Salvar Ficha</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Universal de Detalhes da Missão -->
+<div id="questModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border-2 border-amber-600 rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+        <div class="flex justify-between items-center mb-1">
+            <div id="modalCategory" class="text-xs font-bold text-amber-400 uppercase tracking-widest">Categoria</div>
+            <div id="modalXpBadge" class="text-xs bg-amber-950 text-yellow-300 px-2 py-0.5 rounded font-bold border border-amber-600/50">+50 XP</div>
+        </div>
+        <h3 id="modalTitle" class="font-game text-xl text-white mb-2">Título da Missão</h3>
+        <p id="modalDescription" class="text-sm text-slate-300 mb-3 bg-slate-900/50 p-3 rounded-xl border border-slate-700 leading-relaxed">Descrição...</p>
+
+        <!-- Anotações -->
+        <div class="mb-3">
+            <label class="block text-xs font-semibold text-amber-300 mb-1"><i class="fa-solid fa-pen-to-square"></i> Suas Anotações / Resposta / Resumo:</label>
+            <textarea id="modalUserNote" rows="3" placeholder="Digite aqui o que foi pedido neste requisito..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+
+        <!-- Anexo Comum (Fotos/PDFs com Compressão Forte) -->
+        <div class="mb-3 bg-slate-900/80 p-3 rounded-xl border border-slate-700">
+            <label class="block text-xs font-semibold text-amber-400 mb-1"><i class="fa-solid fa-cloud-arrow-up"></i> Anexar Comprovante (Foto ou PDF):</label>
+            <input type="file" id="modalFileUpload" accept="image/*,.pdf" onchange="handleFileUpload(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-500 cursor-pointer">
+
+            <div id="filePreviewContainer" class="mt-2 hidden text-center">
+                <div id="filePreviewInfo" class="text-[11px] text-emerald-400 font-semibold mb-1"><i class="fa-solid fa-check"></i> Anexado com sucesso!</div>
+                <img id="imgPreview" src="" alt="Prévia" class="max-h-28 rounded border border-slate-700 mx-auto hidden">
+                <button type="button" onclick="removeFile()" class="text-[10px] text-red-400 hover:underline mt-1 block mx-auto">Remover anexo</button>
+            </div>
+        </div>
+
+        <!-- Assinatura Digital do Líder (Protegida por Senha + Câmara + Conversão PNG Compacta) -->
+        <div class="mb-4 bg-slate-900/90 p-3 rounded-xl border-2 border-yellow-500/50">
+            <div class="flex justify-between items-center mb-1">
+                <label class="block text-xs font-semibold text-yellow-400"><i class="fa-solid fa-file-signature"></i> Assinatura Digital do Líder (Câmara):</label>
+                <span id="signatureStatusBadge" class="text-[10px] text-red-400 font-bold">Pendente</span>
+            </div>
+            <p class="text-[10px] text-slate-400 mb-2">Exige a senha do líder (lider123) para fotografar e converter a assinatura para PNG limpo.</p>
+
+            <input type="file" id="modalSignatureUpload" accept="image/*" capture="environment" onchange="handleSignatureCameraCapture(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-yellow-600 file:text-slate-950 hover:file:bg-yellow-500 cursor-pointer">
+
+            <div id="signaturePreviewContainer" class="mt-2 hidden text-center bg-slate-950 p-2 rounded border border-yellow-500/30">
+                <img id="imgSignaturePreview" src="" alt="Assinatura" class="max-h-16 mx-auto object-contain bg-white p-1 rounded">
+                <button type="button" onclick="removeSignature()" class="text-[10px] text-red-400 hover:underline mt-1 block mx-auto">Remover Assinatura</button>
+            </div>
+        </div>
+
+        <div id="modalStatusBox" class="mb-4 p-2.5 rounded-xl text-xs flex items-center gap-2 bg-slate-900 border border-slate-700 text-slate-400">
+            <i class="fa-solid fa-circle-info"></i>
+            <span id="modalStatusText">Status: Pendente.</span>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="closeModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-2.5 rounded-xl text-sm transition">Fechar</button>
+            <button id="modalActionBtn" onclick="requestValidation()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-amber-600/30">Salvar e Concluir</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Relatório Geral -->
+<div id="reportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 overflow-y-auto">
+    <div class="bg-slate-900 border-2 border-emerald-600 rounded-2xl max-w-2xl w-full p-4 md:p-6 shadow-2xl relative my-4 text-slate-200 max-h-[95vh] flex flex-col">
+        <div class="flex justify-between items-center mb-3 no-print shrink-0">
+            <h3 class="font-game text-base md:text-xl text-emerald-400"><i class="fa-solid fa-file-invoice"></i> Relatórios da Classe</h3>
+            <button onclick="closeReportModal()" class="text-slate-400 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="mb-3 flex gap-2 no-print shrink-0">
+            <button onclick="switchReportTab('fisico')" id="repTabBtnFisico" class="flex-1 bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition border border-amber-500 shadow flex items-center justify-center gap-1"><i class="fa-solid fa-person-hiking"></i> Físico</button>
+            <button onclick="switchReportTab('espiritual')" id="repTabBtnEspiritual" class="flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 px-3 rounded-xl text-xs transition border border-slate-700 shadow flex items-center justify-center gap-1"><i class="fa-solid fa-book-bible"></i> Espiritual</button>
+        </div>
+
+        <div class="overflow-y-auto flex-grow pr-1">
+            <div id="printableReport" class="bg-white text-slate-900 p-4 md:p-6 rounded-xl border border-slate-300 space-y-4 text-xs">
+                <div class="text-center border-b pb-3">
+                    <span id="repClassNameBadge" class="text-[10px] font-bold text-amber-800 uppercase tracking-widest border border-amber-800 px-2 py-0.5 rounded">Classe de Amigo</span>
+                    <h2 id="repMainTitle" class="font-game text-base md:text-lg font-bold mt-1">CLUBE DE DESBRAVADORES - RELATÓRIO FÍSICO E PRÁTICO</h2>
+                    <p class="text-gray-600">Portfólio Oficial do Desbravador</p>
+                    <p class="text-[9px] text-gray-500 mt-1">Autor do Projeto: Líder Luiz Eduardo (CPF: 56128690297)</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 border-b pb-3">
+                    <div><strong>Nome:</strong> <span id="repName">-</span></div>
+                    <div><strong>Idade:</strong> <span id="repAge">-</span></div>
+                    <div><strong>Pai:</strong> <span id="repFather">-</span></div>
+                    <div><strong>Mãe:</strong> <span id="repMother">-</span></div>
+                    <div><strong>CPF:</strong> <span id="repCpf">-</span></div>
+                    <div><strong>Tipo Sanguíneo:</strong> <span id="repBlood">-</span></div>
+                    <div class="col-span-2"><strong>Alergias:</strong> <span id="repAllergies">-</span></div>
+                </div>
+
+                <div>
+                    <h4 id="repSectionTitle" class="font-bold text-sm text-amber-800 mb-2">Progresso Físico e Prático:</h4>
+                    <div id="repQuestsContainer" class="space-y-2 border p-2 rounded bg-slate-50 max-h-[300px] overflow-y-auto"></div>
+                </div>
+
+                <div class="pt-4 border-t flex justify-between items-center text-[10px] text-gray-500">
+                    <div>Assinatura do Conselheiro: ___________________________</div>
+                    <div>Assinatura do Diretor: ___________________________</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 flex gap-2 no-print shrink-0 pt-2 border-t border-slate-800">
+            <button onclick="closeReportModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">Fechar</button>
+            <button onclick="if(window.AndroidPrint) { AndroidPrint.printPage(); } else { window.print(); }" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition shadow-lg text-xs flex items-center justify-center gap-1"><i class="fa-solid fa-print"></i> Imprimir</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Senha do Conselheiro -->
+<div id="advisorModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border-2 border-yellow-500 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+        <button onclick="closeAdvisorModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+        <h3 class="font-game text-lg text-yellow-400 mb-2"><i class="fa-solid fa-user-shield"></i> Acesso do Conselheiro</h3>
+        <p class="text-xs text-slate-300 mb-4">Insira a senha para aprovar fases do mapa instantaneamente.</p>
+        <input type="password" id="advisorPasswordInput" placeholder="Senha do Conselheiro" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white mb-4 focus:outline-none focus:border-yellow-500">
+        <div class="flex gap-2">
+            <button onclick="closeAdvisorModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold py-2.5 rounded-xl transition">Cancelar</button>
+            <button onclick="verifyAdvisorLogin()" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-bold text-xs py-2.5 rounded-xl transition">Entrar Líder</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE ATIVAÇÃO EXCLUSIVO POR QR CODE -->
+<div id="activationModal" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-md w-full p-6 shadow-2xl text-center relative">
+        <div class="w-16 h-16 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/30 text-2xl">
+            <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <h3 class="font-game text-xl text-yellow-400 mb-2">Ativação por QR Code</h3>
+        <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+            Aponte a câmara para o QR Code de liberação fornecido pela Liderança do Clube para ativar o aplicativo.
+        </p>
+
+        <div id="activationFormArea" class="space-y-3 text-left">
+            <button onclick="startQrScanner()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/30 text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-camera"></i> Abrir Câmara para Ler QR Code
+            </button>
+        </div>
+
+        <!-- Área do Leitor Visível -->
+        <div id="qr-reader-container" class="hidden mt-3">
+            <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
+            <button onclick="stopQrScanner()" class="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                Cancelar Leitura
+            </button>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 text-[10px] text-slate-500">
+            Clube de Desbravadores • Área de Segurança
+        </div>
+    </div>
+</div>
+
+<footer class="bg-slate-900 border-t border-slate-800 text-center py-4 text-xs text-slate-500 no-print">
+    Painel RPG dos Desbravadores • Autor do Projeto: Líder Luiz Eduardo (CPF: 56128690297)
+</footer>
+
+<!-- Script Principal -->
+<script>
+    const classesData = {
+        amigo: {
+            name: "Classe de Amigo & Avançada (10 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 10 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 10, cat: "III. Servindo", title: "1. Ação Comunitária", desc: "Dedicar duas horas ajudando alguém (visita, alimento ou projeto ecológico).", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-heart" },
+                { id: 11, cat: "III. Servindo", title: "2. Redação de Cidadania", desc: "Escrever redação sobre como ser bom cidadão no lar e na escola.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-pen-clip" },
+                { id: 12, cat: "IV. Amizade", title: "1. Qualidades e Regra Áurea", desc: "Mencionar dez qualidades de um bom amigo e praticar a Regra Áurea (Mt 7:12).", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-users" },
+                { id: 13, cat: "IV. Amizade", title: "2. Hino Nacional", desc: "Saber cantar o Hino Nacional, história e autores da letra/música.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-flag" },
+                { id: 14, cat: "V. Saúde", title: "1. Especialidade de Saúde", desc: "Completar Natação I, Cultura física, Nós e amarras ou Segurança na água.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-swimming" },
+                { id: 15, cat: "V. Saúde", title: "2. Experiência de Daniel", desc: "Explicar temperança, memorizar Dn 1:8 e escrever compromisso pessoal.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-apple-whole" },
+                { id: 16, cat: "V. Saúde", title: "3. Dieta Saudável", desc: "Aprender princípios de dieta saudável e ajudar a preparar quadro de alimentos.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-carrot" },
+                { id: 17, cat: "VI. Liderança", title: "1. Caminhada de 5 km", desc: "Acompanhar planejamento até a execução de uma caminhada de 5 km.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-hiking" },
+                { id: 18, cat: "VII. Natureza", title: "1. Especialidade de Natureza", desc: "Completar Felinos, Cães, Mamíferos, Sementes ou Aves de estimação.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-paw" },
+                { id: 19, cat: "VII. Natureza", title: "2. Purificação de Água", desc: "Aprender a purificar água e escrever sobre Jesus como a água da vida.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-droplet" },
+                { id: 20, cat: "VII. Natureza", title: "3. Montar Barraca", desc: "Aprender e montar uma barraca em local apropriado.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-campground" },
+                { id: 21, cat: "VIII. Acampamento", title: "1. Cordas e Nós", desc: "Cuidar de corda e fazer nós exigidos.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-rope" },
+                { id: 22, cat: "VIII. Acampamento", title: "2. Especialidade Acampamento I", desc: "Completar a especialidade de Acampamento I.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-tent" },
+                { id: 23, cat: "VIII. Acampamento", title: "3. Regras de Caminhada e Pista", desc: "Apresentar 10 regras de caminhada, o que fazer se perdido e seguir pista de 10 sinais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shoe-prints" },
+                { id: 24, cat: "IX. Estilo de Vida", title: "1. Artes Manuais", desc: "Completar uma especialidade na área de Artes e habilidades manuais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-palette" },
+                { id: 30, cat: "X. Avançada", title: "6. Flores e Insetos", desc: "Conhecer e identificar 10 flores silvestres e 10 insetos de sua região.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bug" },
+                { id: 31, cat: "X. Avançada", title: "7. Fogueira Natural", desc: "Começar uma fogueira usando materiais naturais e mantê-la acesa.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire" },
+                { id: 32, cat: "X. Avançada", title: "8. Uso Seguro de Lâminas", desc: "Usar faca, facão ou machadinha e conhecer 10 regras de segurança.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield-halved" },
+                { id: 33, cat: "X. Avançada", title: "9. Especialidade Missionária/Agrícola", desc: "Escolher e completar especialidade em Atividades missionárias ou agrícolas.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-seedling" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Voto e Lei", desc: "Memorizar e explicar o Voto e a Lei do Desbravador.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-award" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro de Leitura", desc: "Ler o livro do Curso de Leitura do ano.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro Vaso de Barro", desc: "Ler o livro Vaso de Barro.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "I. Gerais", title: "6. Classe Bíblica", desc: "Participar ativamente da Classe Bíblica do seu Clube.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bible" },
+                { id: 7, cat: "II. Espiritual", title: "1. Criação, Pragas, Tribos e Livros", desc: "a) Criação; b) 10 Pragas; c) 12 Tribos; d) 39 livros do AT.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scroll" },
+                { id: 8, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Ler e explicar: João 3:16, Efésios 6:1-3, II Timóteo 3:16, Salmo 1.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 9, cat: "II. Espiritual", title: "3. Leitura Bíblica", desc: "Cumprir a leitura bíblica designada (Gn e Êx).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 25, cat: "X. Avançada", title: "1. Hino dos Desbravadores", desc: "Memorizar, cantar ou tocar o Hino dos Desbravadores e conhecer sua história.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-music" },
+                { id: 26, cat: "X. Avançada", title: "2. Personagem do AT", desc: "Conversar sobre o amor, cuidado e livramento em José, Jonas, Ester ou Rute.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bookmark" },
+                { id: 27, cat: "X. Avançada", title: "3. Trazer Amigos", desc: "Levar pelo menos dois amigos não adventistas à Escola Sabatina ou Clube.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-plus" },
+                { id: 28, cat: "X. Avançada", title: "4. Boas Maneiras e Higiene", desc: "Conhecer princípios de higiene e boas maneiras à mesa.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-utensils" },
+                { id: 29, cat: "X. Avançada", title: "5. Especialidade Arte de Acampar", desc: "Completar a especialidade de Arte de acampar.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire-burner" }
+            ]
+        },
+        companheiro: {
+            name: "Classe de Companheiro & Avançada (11 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 11 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 11, cat: "III. Servindo", title: "1. Ação Comunitária", desc: "Planejar e dedicar pelo menos duas horas servindo à comunidade.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-heart" },
+                { id: 12, cat: "III. Servindo", title: "2. Projeto da Igreja", desc: "Participar de um projeto que beneficiará sua comunidade ou igreja.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-church" },
+                { id: 13, cat: "IV. Amizade", title: "1. Respeito às Diferenças", desc: "Conversar sobre como respeitar pessoas de diferentes culturas, raça e sexo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-users" },
+                { id: 14, cat: "V. Saúde", title: "1. Verso de Aptidão Física", desc: "Memorizar e explicar I Coríntios 9:24-27.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-dumbbell" },
+                { id: 15, cat: "V. Saúde", title: "2. Exercícios Físicos", desc: "Conversar com o líder sobre aptidão física e exercícios regulares.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-running" },
+                { id: 16, cat: "V. Saúde", title: "3. Prejuízos do Cigarro", desc: "Aprender sobre os prejuízos do fumo e escrever compromisso.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-ban-smoking" },
+                { id: 17, cat: "V. Saúde", title: "4. Especialidade de Saúde", desc: "Completar Natação principiante II ou Acampamento II.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-swimming" },
+                { id: 18, cat: "VI. Liderança", title: "1. Meditação Criativa", desc: "Dirigir ou colaborar em meditação criativa para Unidade ou Clube.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hands-praying" },
+                { id: 19, cat: "VI. Liderança", title: "2. Planejamento de Excursão", desc: "Ajudar no planejamento de excursão ou acampamento com pernoite.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-map-location-dot" },
+                { id: 20, cat: "VII. Natureza", title: "1. Jogos na Natureza", desc: "Participar de jogos na natureza ou caminhada ecológica por 1 hora.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-tree" },
+                { id: 21, cat: "VII. Natureza", title: "2. Especialidade de Natureza", desc: "Completar Anfíbios, Aves, Pecuária, Répteis, Moluscos, Árvores ou Arbustos.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-paw" },
+                { id: 22, cat: "VII. Natureza", title: "3. Diário da Criação", desc: "Fazer diário por 7 dias registrando observações da Criação.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-atlas" },
+                { id: 23, cat: "VIII. Acampamento", title: "1. Pontos Cardeais e Rosa dos Ventos", desc: "Descobrir pontos cardeais sem bússola e desenhar Rosa dos Ventos.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-compass" },
+                { id: 24, cat: "VIII. Acampamento", title: "2. Relatório de Acampamento", desc: "Participar de acampamento de fim de semana e fazer relatório.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-campground" },
+                { id: 25, cat: "VIII. Acampamento", title: "3. Nós Avançados", desc: "Aprender ou recapitular nós: Oito, Volta do salteador, Duplo, Caminhoneiro, etc.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-rope" },
+                { id: 26, cat: "IX. Estilo de Vida", title: "1. Artes Manuais", desc: "Completar especialidade não realizada em Artes e habilidades manuais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-palette" },
+                { id: 31, cat: "X. Avançada", title: "5. Caminhada de 6 km", desc: "Participar de caminhada de 6 km e preparar relatório.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-hiking" },
+                { id: 32, cat: "X. Avançada", title: "6. Saúde e Prevenção", desc: "Assistir curso antitabaco, filmes de saúde ou elaborar cartaz antidrogas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield-heart" },
+                { id: 33, cat: "X. Avançada", title: "7. Aves e Árvores Nativas", desc: "Identificar e descrever 12 aves nativas e 12 árvores nativas.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 35, cat: "X. Avançada", title: "9. Refeição em Fogueira", desc: "Preparar uma refeição em fogueira durante acampamento.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire" },
+                { id: 36, cat: "X. Avançada", title: "10. Quadro de 15 Nós", desc: "Preparar um quadro com 15 nós diferentes.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-list-check" },
+                { id: 37, cat: "X. Avançada", title: "11. Excursionismo com Mochila", desc: "Completar a especialidade de Excursionismo pedestre com mochila.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-backpack" },
+                { id: 38, cat: "X. Avançada", title: "12. Especialidade Extra", desc: "Completar especialidade não realizada em Habilidades domésticas, Ciência/saúde, etc.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-certificate" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Voto do Desbravador", desc: "Ilustrar de forma criativa o significado do Voto do Desbravador.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-award" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro do Ano", desc: "Ler o livro do Curso de Leitura do ano e escrever um parágrafo sobre o que mais chamou atenção.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro Um Simples Lanche", desc: "Ler o livro Um simples lanche.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "I. Gerais", title: "6. Classe Bíblica", desc: "Participar ativamente da Classe Bíblica do seu Clube.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bible" },
+                { id: 7, cat: "II. Espiritual", title: "1. Mandamentos e NT", desc: "Conhecer os 10 Mandamentos e os 27 livros do Novo Testamento.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scroll" },
+                { id: 8, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Ler e explicar: Is 41:9-10, Hb 13:5, Pv 22:6, 1 Jo 1:9, Sl 8.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 9, cat: "II. Espiritual", title: "3. Leitura Bíblica", desc: "Cumprir leitura bíblica designada (Lv, Nm, Dt, Js, Jz, Rt, Sm, etc.).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 10, cat: "II. Espiritual", title: "4. Temas de Jesus", desc: "Estudar parábola, milagre, Sermão da Montanha ou Segunda Vinda.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-chalkboard" },
+                { id: 27, cat: "X. Avançada", title: "1. Bandeira Nacional", desc: "Composição, significado e uso correto da Bandeira Nacional.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-flag" },
+                { id: 28, cat: "X. Avançada", title: "2. Primeira Visão", desc: "Ler primeira visão de Ellen White (Primeiros Escritos) e discutir profetas.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-eye" },
+                { id: 29, cat: "X. Avançada", title: "3. Atividade Missionária", desc: "Participar de atividade missionária ou comunitária com um amigo.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-group" },
+                { id: 30, cat: "X. Avançada", title: "4. Respeito aos Pais", desc: "Conversar sobre respeito aos pais e listar como cuidam de você.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-house-chimney" },
+                { id: 34, cat: "X. Avançada", title: "8. Cerimônias do Clube", desc: "Participar de cerimônias (investidura, admissão, etc.) e sugerir ideias.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-medal" }
+            ]
+        },
+        pesquisador: {
+            name: "Classe de Pesquisador & Avançada (12 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 12 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 11, cat: "III. Servindo", title: "1. Projetos Comunitários", desc: "Conhecer projetos comunitários da cidade e participar de pelo menos um.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-hand" },
+                { id: 12, cat: "III. Servindo", title: "2. Atividades Missionárias", desc: "Participar em três atividades missionárias da igreja.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-church" },
+                { id: 13, cat: "IV. Amizade", title: "1. Pressão de Grupo", desc: "Participar de debate ou representação sobre pressão de grupo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-users" },
+                { id: 14, cat: "IV. Amizade", title: "2. Órgão Público", desc: "Visitar órgão público e descobrir utilidade do Clube para comunidade.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-building-columns" },
+                { id: 15, cat: "V. Saúde", title: "1. Estilo de Vida sem Álcool", desc: "Texto pessoal ou discussão sobre efeitos do álcool e drogas.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-ban" },
+                { id: 16, cat: "VI. Liderança", title: "1. Cerimônia de Abertura", desc: "Dirigir cerimônia de abertura semanal ou Escola Sabatina.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-podium" },
+                { id: 17, cat: "VI. Liderança", title: "2. Organizar Classe Bíblica", desc: "Ajudar a organizar a Classe Bíblica do Clube.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-people-group" },
+                { id: 18, cat: "VII. Natureza", title: "1. Constelações", desc: "Identificar estrela Alfa de Centauro e Órion (significado espiritual).", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-star" },
+                { id: 19, cat: "VII. Natureza", title: "2. Especialidade de Natureza", desc: "Completar Astronomia, Cactos, Climatologia, Flores ou Rastreio.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-leaf" },
+                { id: 20, cat: "VIII. Acampamento", title: "1. Segredos e Refeições", desc: "Apresentar 6 segredos para acampamento, acampar e cozinhar 2 refeições.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-campground" },
+                { id: 21, cat: "VIII. Acampamento", title: "2. Especialidade de Acampamento/Socorros", desc: "Completar Acampamento III ou Primeiros socorros - básico.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-kit-medical" },
+                { id: 22, cat: "VIII. Acampamento", title: "3. Bússola e GPS", desc: "Usar bússola ou GPS para encontrar endereços na zona urbana.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-location-crosshairs" },
+                { id: 23, cat: "IX. Estilo de Vida", title: "1. Artes Manuais", desc: "Completar especialidade não realizada em Artes e habilidades manuais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-palette" },
+                { id: 26, cat: "X. Avançada", title: "3. Convidar Amigo", desc: "Convidar pessoa para Clube, Classe Bíblica ou Pequeno Grupo.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-plus" },
+                { id: 28, cat: "X. Avançada", title: "5. Caminhada de 10 km", desc: "Participar de caminhada de 10 km com lista de equipamentos e calçados.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-hiking" },
+                { id: 29, cat: "X. Avançada", title: "6. Evento Especial", desc: "Participar na organização de evento do Clube (Investidura, Dia Mundial, etc.).", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-calendar-days" },
+                { id: 30, cat: "X. Avançada", title: "7. Pegadas de Animais", desc: "Identificar 6 pegadas e fazer 3 modelos em gesso/biscuit.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-paw" },
+                { id: 31, cat: "X. Avançada", title: "8. Amarras e Móvel", desc: "Fazer 4 amarras básicas e construir móvel de acampamento.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hammer" },
+                { id: 32, cat: "X. Avançada", title: "9. Cardápio Vegetariano", desc: "Planejar cardápio vegetariano para acampamento de 3 dias.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-carrot" },
+                { id: 33, cat: "X. Avançada", title: "10. Comunicação Alternativa", desc: "Enviar e receber mensagem por semáforo, Morse, Libras ou Braille.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-signal" },
+                { id: 34, cat: "X. Avançada", title: "11. Especialidade Extra", desc: "Completar especialidade em Domésticas, Ciência/saúde, Missionárias ou Agrícolas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-certificate" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Significado da Lei", desc: "Demonstrar compreensão da Lei do Desbravador (representação, debate ou redação).", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scale-balanced" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro do Ano", desc: "Ler livro do Curso de Leitura e escrever dois parágrafos de resumo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro Além da Magia", desc: "Ler o livro Além da magia.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "I. Gerais", title: "6. Classe Bíblica", desc: "Participar ativamente da Classe Bíblica do seu Clube.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bible" },
+                { id: 7, cat: "II. Espiritual", title: "1. Levítico 11", desc: "Regras de alimentos comestíveis e não comestíveis.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-utensils" },
+                { id: 8, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Explicar Ec 12:13-14, Rm 6:23, Ap 1:3, Is 43:1-2, Sl 51:10, Sl 16.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 9, cat: "II. Espiritual", title: "3. Leitura Bíblica", desc: "Cumprir leitura bíblica designada (Reis, Crônicas, Esdras, Neemias, Ester, Jó, Salmos, Provérbios, Eclesiastes).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 10, cat: "II. Espiritual", title: "4. Histórias de Salvação", desc: "Estudar Nicodemos, Mulher Samaritana, Bom Samaritano, Filho Pródigo ou Zaqueu.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-heart" },
+                { id: 24, cat: "X. Avançada", title: "1. Bandeira e Bandeirim", desc: "Usar de forma adequada a bandeira dos Desbravadores e bandeirim.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-flag" },
+                { id: 25, cat: "X. Avançada", title: "2. Pioneiros e Missão", desc: "Ler história de J. N. Andrews e discutir Grande Comissão.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-globe" },
+                { id: 27, cat: "X. Avançada", title: "4. Asseio ou Família", desc: "Completar especialidade de Asseio e cortesia cristã ou Vida familiar.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-house-user" }
+            ]
+        },
+        pioneiro: {
+            name: "Classe de Pioneiro & Avançada (13 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 13 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 12, cat: "III. Servindo", title: "1. Projetos Missionários", desc: "Participar em dois projetos missionários definidos pelo Clube.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-heart" },
+                { id: 13, cat: "III. Servindo", title: "2. Projeto Comunitário", desc: "Trabalhar em projeto comunitário da igreja, escola ou comunidade.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-people-roof" },
+                { id: 15, cat: "V. Saúde", title: "1. Programa de Exercícios", desc: "Preparar programa de exercícios diários e compromisso de aptidão física.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-heart-pulse" },
+                { id: 17, cat: "VI. Liderança", title: "1. Seminário de Igreja", desc: "Assistir seminário de Ministério Pessoal ou Evangelismo.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-chalkboard-user" },
+                { id: 18, cat: "VI. Liderança", title: "2. Atividade Social", desc: "Participar de atividade social de sua igreja.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-champagne-glasses" },
+                { id: 19, cat: "VII. Natureza", title: "1. Dilúvio e Fósseis", desc: "Estudar a história do dilúvio e o processo de fossilização.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bone" },
+                { id: 20, cat: "VII. Natureza", title: "2. Especialidade de Natureza", desc: "Completar especialidade em Estudo da natureza não realizada anteriormente.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-leaf" },
+                { id: 21, cat: "VIII. Acampamento", title: "1. Fogo Refletor", desc: "Fazer um fogo refletor e demonstrar seu uso.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire" },
+                { id: 22, cat: "VIII. Acampamento", title: "2. Acampamento e Mochila", desc: "Acampamento de fim de semana arrumando bolsa/mochila apropriadamente.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-backpack" },
+                { id: 23, cat: "VIII. Acampamento", title: "3. Resgate Básico", desc: "Completar a especialidade de Resgate básico.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-suitcase-medical" },
+                { id: 24, cat: "IX. Estilo de Vida", title: "1. Especialidade Extra", desc: "Completar especialidade em Missionárias/comunitárias, Profissionais ou Agrícolas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-briefcase" },
+                { id: 25, cat: "X. Avançada", title: "1. Cidadania Cristã", desc: "Completar a especialidade de Cidadania cristã.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-earth-americas" },
+                { id: 27, cat: "X. Avançada", title: "3. Desafio de Trilha/Esporte", desc: "Caminhar 10km, cavalgar 2km, pedalar 15km, nadar 200m ou correr 1500m (relatório de 2 páginas).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-biking" },
+                { id: 28, cat: "X. Avançada", title: "4. Mapa e Bússola", desc: "Completar a especialidade de Mapa e bússola.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-compass" },
+                { id: 29, cat: "X. Avançada", title: "5. Uso da Machadinha", desc: "Demonstrar habilidade no uso correto de uma machadinha.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-axe" },
+                { id: 30, cat: "X. Avançada", title: "6. Fogueira na Chuva", desc: "Acender fogueira em dia de chuva, conseguir lenha seca e mantê-la acesa.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cloud-rain" },
+                { id: 31, cat: "X. Avançada", title: "7. Sobrevivência / Sinais", desc: "Plantas comestíveis, semafórico, náutico, Libras ou Braille.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-signs-post" },
+                { id: 32, cat: "X. Avançada", title: "8. Atividades Recreativas", desc: "Completar especialidade em Atividades recreativas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-basketball" },
+                { id: 33, cat: "X. Avançada", title: "9. Coleções Naturais", desc: "Identificar 25 folhas, rochas, flores, borboletas ou conchas.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather-pointed" },
+                { id: 34, cat: "X. Avançada", title: "10. Fogueiras e Cozinha ao Ar Livre", desc: "Completar a especialidade de Fogueiras e cozinha ao ar livre.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire-burner" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Alvo e Lema JA", desc: "Memorizar e entender o Alvo e o Lema JA.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bullseye" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro do Ano", desc: "Ler livro do Curso de Leitura do ano e resumi-lo em uma página.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro Expedição Galápagos", desc: "Ler o livro Expedição Galápagos.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "II. Espiritual", title: "1. Bem-Aventuranças", desc: "Memorizar e demonstrar conhecimento das Bem-Aventuranças (Sermão da Montanha).", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-mountain" },
+                { id: 7, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Explicar Is 26:3, Rm 12:12, Jo 14:1-3, Sl 37:5, Fp 3:12-14, Sl 23, 1 Sm 15:22.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 8, cat: "II. Espiritual", title: "3. Conversas sobre Cristianismo", desc: "Conversar sobre cristianismo, discípulos e como ser cristão verdadeiro.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-comments" },
+                { id: 9, cat: "II. Espiritual", title: "4. Inspiração da Bíblia", desc: "Estudo especial sobre inspiração, revelação e iluminação.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 10, cat: "II. Espiritual", title: "5. Convidar Pessoas", desc: "Convidar três ou mais pessoas para Classe Bíblica ou Pequeno Grupo.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-plus" },
+                { id: 11, cat: "II. Espiritual", title: "6. Leitura Bíblica", desc: "Leitura bíblica (Eclesiastes, Isaías, Jeremias, Daniel, Joel, Amós, Jonas, Miqueias, Ageu, Zacarias, Malaquias, Mateus).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scroll" },
+                { id: 14, cat: "IV. Amizade", title: "1. Autoestima e Relacionamentos", desc: "Debate e avaliação pessoal sobre autoestima, amizade e otimismo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-face-smile" },
+                { id: 16, cat: "V. Saúde", title: "2. Estilo de Vida Adventista", desc: "Discutir vantagens do estilo de vida adventista segundo a Bíblia.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-apple-whole" },
+                { id: 26, cat: "X. Avançada", title: "2. Bom Samaritano Prático", desc: "Encenar o Bom Samaritano e auxiliar de forma prática 3 pessoas.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hands-bound" }
+            ]
+        },
+        excursionista: {
+            name: "Classe de Excursionista & Avançada (14 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 14 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 12, cat: "III. Servindo", title: "1. Convidar Amigo", desc: "Convidar um amigo para atividade social de sua igreja ou Associação.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-plus" },
+                { id: 13, cat: "III. Servindo", title: "2. Projeto Comunitário Completo", desc: "Participar de projeto comunitário desde o planejamento até a execução.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-list-check" },
+                { id: 14, cat: "III. Servindo", title: "3. Relacionamento Juvenil", desc: "Discutir relacionamentos com vizinhos, na escola, atividades sociais e recreativas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-people-arrows" },
+                { id: 15, cat: "IV. Amizade", title: "1. Autoestima e Finanças", desc: "Examinar atitudes sobre autoestima, relacionamento familiar, finanças pessoais e pressão de grupo.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-wallet" },
+                { id: 16, cat: "IV. Amizade", title: "2. Recreação Especializada", desc: "Criar 5 sugestões de atividades recreativas para pessoas com necessidades específicas e organizar uma.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hands-holding-child" },
+                { id: 17, cat: "V. Saúde", title: "1. Especialidade de Temperança", desc: "Completar a especialidade de Temperança.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-heart-pulse" },
+                { id: 18, cat: "VI. Liderança", title: "1. Organograma da Igreja", desc: "Preparar organograma da igreja local e funções dos departamentos.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-sitemap" },
+                { id: 19, cat: "VI. Liderança", title: "2. Programas da Igreja", desc: "Participar de dois programas envolvendo diferentes departamentos.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-church" },
+                { id: 20, cat: "VI. Liderança", title: "3. Aventuras com Cristo", desc: "Completar a especialidade de Aventuras com Cristo.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cross" },
+                { id: 21, cat: "VII. Natureza", title: "1. Nicodemos e a Lagarta", desc: "Relacionar Nicodemos com o ciclo de vida da lagarta/borboleta e significado espiritual.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bug" },
+                { id: 22, cat: "VII. Natureza", title: "2. Especialidade de Natureza", desc: "Completar especialidade em Estudo da natureza não realizada anteriormente.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-leaf" },
+                { id: 23, cat: "VIII. Acampamento", title: "1. Expedição de 20 km", desc: "Andar 20km em área rural/deserta com conselheiro, incluindo pernoite e anotações.", xp: 90, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-hiking" },
+                { id: 24, cat: "VIII. Acampamento", title: "2. Especialidade de Pioneirias", desc: "Completar a especialidade de Pioneirias.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-tents" },
+                { id: 25, cat: "IX. Estilo de Vida", title: "1. Especialidade Extra", desc: "Completar especialidade em Missionárias, Agrícolas, Ciência/saúde ou Domésticas.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-certificate" },
+                { id: 27, cat: "X. Avançada", title: "2. Visita Missionária", desc: "Acompanhar pastor ou ancião em visita missionária ou estudo bíblico.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-handshake-angle" },
+                { id: 28, cat: "X. Avançada", title: "3. Testemunho Juvenil", desc: "Completar a especialidade de Testemunho juvenil.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bullhorn" },
+                { id: 29, cat: "X. Avançada", title: "4. Atividades de Sábado", desc: "Apresentar 5 atividades na natureza para o sábado à tarde.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-sun" },
+                { id: 30, cat: "X. Avançada", title: "5. Móvel e Portal", desc: "Construir móvel de acampamento e portal para o Clube com a Unidade.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-archway" },
+                { id: 32, cat: "X. Avançada", title: "7. Plantas Silvestres", desc: "Encontrar alimentos em plantas silvestres e diferenciá-las das venenosas.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-seedling" },
+                { id: 33, cat: "X. Avançada", title: "8. Animais Peçonhentos", desc: "Procedimentos em caso de ferimentos por animais peçonhentos e não peçonhentos.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield-dog" },
+                { id: 34, cat: "X. Avançada", title: "9. Trilhas em Terrenos", desc: "Técnicas para percorrer trilhas em desertos, florestas, pântanos e rios.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-route" },
+                { id: 35, cat: "X. Avançada", title: "10. Ordem Unida", desc: "Completar a especialidade de Ordem unida.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-military-pointing" },
+                { id: 36, cat: "X. Avançada", title: "11. Vida Silvestre", desc: "Completar a especialidade de Vida silvestre.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-otter" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Objetivo JA", desc: "Memorizar e explicar o significado do Objetivo JA.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bullseye" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro do Ano", desc: "Ler livro do Curso de Leitura do ano e resumi-lo em uma página.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro O Fim do Começo", desc: "Ler o livro O fim do começo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "II. Espiritual", title: "1. Apóstolos e Fruto do Espírito", desc: "Conhecer os 12 apóstolos e o Fruto do Espírito.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-users-line" },
+                { id: 7, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Explicar Rm 8:28, Ap 21:1-3, 2 Pe 1:20-21, 1 Jo 2:14, 2 Cr 20:20, Sl 46.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 8, cat: "II. Espiritual", title: "3. O Espírito Santo", desc: "Estudar o papel do Espírito Santo no crescimento espiritual.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-dove" },
+                { id: 9, cat: "II. Espiritual", title: "4. Eventos Finais", desc: "Estudar com a Unidade os eventos finais e a segunda vinda de Cristo.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cloud-sun" },
+                { id: 10, cat: "II. Espiritual", title: "5. O Verdadeiro Sábado", desc: "Descobrir através da Bíblia o verdadeiro significado da observância do sábado.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-calendar-days" },
+                { id: 11, cat: "II. Espiritual", title: "6. Leitura Bíblica", desc: "Leitura bíblica (Mateus, Marcos, Lucas, João, Atos).", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 26, cat: "X. Avançada", title: "1. Lei de Deus e Autoridades", desc: "Apresentação sobre respeito à Lei de Deus e autoridades civis (10 princípios morais).", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scale-balanced" },
+                { id: 31, cat: "X. Avançada", title: "6. Seminário de Modéstia/Sábado", desc: "Conversar com a Unidade sobre modéstia cristã, recreação, saúde ou sábado.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-person-chalkboard" }
+            ]
+        },
+        guia: {
+            name: "Classe de Guia & Avançada (15 anos)",
+            fisico: [
+                { id: 1, cat: "I. Gerais", title: "1. Idade Mínima", desc: "Ter, no mínimo, 15 anos de idade.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-cake-candles" },
+                { id: 2, cat: "I. Gerais", title: "2. Membro Ativo", desc: "Ser membro ativo do Clube de Desbravadores.", xp: 30, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-shield" },
+                { id: 12, cat: "III. Servindo", title: "1. Visita e Adoção", desc: "Visitar doente, adotar pessoa/família em necessidade ou projeto aprovado.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-heart" },
+                { id: 13, cat: "III. Servindo", title: "2. Evangelismo Pessoal", desc: "Discutir métodos de evangelismo pessoal e colocar princípios em prática.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bullhorn" },
+                { id: 14, cat: "IV. Amizade", title: "1. Escolha Profissional e Namoro", desc: "Palestra sobre escolha profissional, relacionamento com pais, namoro e plano de Deus para o sexo.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-heart" },
+                { id: 15, cat: "V. Saúde", title: "1. Oito Remédios Naturais", desc: "Apresentar para o Clube/Unidade sobre os 8 remédios naturais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-apple-whole" },
+                { id: 16, cat: "V. Saúde", title: "2. Atividade de Temperança", desc: "Escrever poesia/artigo de saúde, corrida, leitura de Temperança (E. White) ou Nutrição.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-dumbbell" },
+                { id: 17, cat: "VI. Liderança", title: "1. Organograma da Divisão", desc: "Preparar organograma estrutural da IASD na Divisão Sul-Americana.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-sitemap" },
+                { id: 18, cat: "VI. Liderança", title: "2. Treinamento de Liderança", desc: "Curso para conselheiros, convenção de liderança ou 2 reuniões de diretoria.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-tie" },
+                { id: 19, cat: "VI. Liderança", title: "3. Ensinar Especialidade", desc: "Planejar e ensinar no mínimo 2 requisitos de especialidade para um grupo.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-chalkboard-user" },
+                { id: 20, cat: "VII. Natureza", title: "1. Infância de Jesus e a Natureza", desc: "Estudar lições da natureza na infância de Jesus (O Desejado de Todas as Nações).", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-tree" },
+                { id: 21, cat: "VII. Natureza", title: "2. Ecologia ou Conservação", desc: "Completar especialidade de Ecologia ou Conservação ambiental.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-globe-americas" },
+                { id: 22, cat: "VIII. Acampamento", title: "1. Pioneiria e Planejamento", desc: "Acampamento com estrutura de pioneiria, planejando levarem o necessário.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-tents" },
+                { id: 23, cat: "VIII. Acampamento", title: "2. Culinária Campestre", desc: "Planejar, preparar e cozinhar três refeições ao ar livre.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-fire-burner" },
+                { id: 24, cat: "VIII. Acampamento", title: "3. Móvel de Acampamento Real", desc: "Construir e utilizar móvel de acampamento em tamanho real com nós e amarras.", xp: 90, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hammer" },
+                { id: 25, cat: "VIII. Acampamento", title: "4. Especialidade de Mestrado", desc: "Completar especialidade não realizada para mestrado (Aquática, Esportes, etc.).", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-medal" },
+                { id: 26, cat: "IX. Estilo de Vida", title: "1. Especialidade Extra", desc: "Completar especialidade em Recreativas, Ciência/saúde, Domésticas ou Profissionais.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-briefcase" },
+                { id: 29, cat: "X. Avançada", title: "3. Trazer Amigos ou Evangelismo", desc: "Trazer 2 amigos para reuniões ou planejar/participar de 4 domingos de evangelismo jovem.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-user-group" },
+                { id: 31, cat: "X. Avançada", title: "5. Trabalho dos Diáconos", desc: "Observar trabalho dos diáconos por 2 meses (propriedade, lava-pés, batismo, dízimos/ofertas).", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-church" },
+                { id: 32, cat: "X. Avançada", title: "6. Mestrado em Vida Campestre", desc: "Completar especialidade para o mestrado em Vida campestre.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-campground" },
+                { id: 33, cat: "X. Avançada", title: "7. Abrigos na Natureza", desc: "Projetar 3 tipos de abrigos, explicar uso e utilizar um em acampamento.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-campground" },
+                { id: 35, cat: "X. Avançada", title: "9. Liderança Campestre", desc: "Completar a especialidade de Liderança campestre.", xp: 90, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-award" },
+                { id: 36, cat: "X. Avançada", title: "10. Orçamento Familiar", desc: "Completar a especialidade de Orçamento familiar.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-file-invoice-dollar" }
+            ],
+            espiritual: [
+                { id: 3, cat: "I. Gerais", title: "3. Voto de Fidelidade", desc: "Memorizar e explicar o Voto de Fidelidade à Bíblia.", xp: 40, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-bible" },
+                { id: 4, cat: "I. Gerais", title: "4. Livro do Ano", desc: "Ler livro do Curso de Leitura do ano e resumi-lo em uma página.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-open" },
+                { id: 5, cat: "I. Gerais", title: "5. Livro O Livro Amargo", desc: "Ler o livro O livro amargo.", xp: 50, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book" },
+                { id: 6, cat: "II. Espiritual", title: "1. Mensagens, Igrejas e Pedras", desc: "Conhecer as 3 Mensagens Angélicas, 7 Igrejas do Apocalipse e 12 Fundamentos da Nova Jerusalém.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scroll" },
+                { id: 7, cat: "II. Espiritual", title: "2. Versos Bíblicos", desc: "Explicar 1 Co 13, 2 Cr 7:14, Ap 22:18-20, 2 Tm 4:6-7, Rm 8:38-39, Mt 6:33-34.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-feather" },
+                { id: 8, cat: "II. Espiritual", title: "3. Dons Espirituais", desc: "Descrever dons espirituais (Paulo) e objetivos para a igreja recebe esses dons.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hands-praying" },
+                { id: 9, cat: "II. Espiritual", title: "4. O Santuário", desc: "Estudar estrutura e serviço do santuário no AT e relacionar com o ministério de Jesus.", xp: 80, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-place-of-worship" },
+                { id: 10, cat: "II. Espiritual", title: "5. Pioneiros Adventistas", desc: "Ler e resumir três histórias de pioneiros adventistas e contá-las no Clube/JA.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bookmark" },
+                { id: 11, cat: "II. Espiritual", title: "6. Leitura Bíblica", desc: "Leitura bíblica (Atos, Romanos, Coríntios, Gálatas, Efésios, Filipenses, Colossenses, Tessalonicenses, Timóteo, etc.).", xp: 90, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-scroll" },
+                { id: 27, cat: "X. Avançada", title: "1. Mordomia", desc: "Completar a especialidade de Mordomia.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-hand-holding-dollar" },
+                { id: 28, cat: "X. Avançada", title: "2. O Maior Discurso de Cristo", desc: "Ler livro O maior discurso de Cristo e escrever página sobre o efeito em sua vida.", xp: 70, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-book-bible" },
+                { id: 30, cat: "X. Avançada", title: "4. Influenciar Amigos", desc: "Escrever página ou palestra sobre um influenciar amigos para Cristo.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-comments" },
+                { id: 34, cat: "X. Avançada", title: "8. Seminário de Temas Atuais", desc: "Seminário ou palestra sobre aborto, bullying, violência, drogas ou ISTs.", xp: 60, completed: false, note: "", fileData: "", fileName: "", signatureData: "", signatureName: "", icon: "fa-triangle-exclamation" }
+            ]
+        }
+    };
+
+    let currentClassKey = "amigo";
+    let currentTab = "fisico";
+    let currentQuestId = null;
+    let isAdvisorMode = false;
+    let tempFileData = "";
+    let tempFileName = "";
+    let tempSignatureData = "";
+    let tempSignatureName = "";
+
+    let profile = {
+        name: localStorage.getItem('dbv_name') || "",
+        dob: localStorage.getItem('dbv_dob') || "",
+        age: localStorage.getItem('dbv_age') || "10",
+        father: localStorage.getItem('dbv_father') || "",
+        mother: localStorage.getItem('dbv_mother') || "",
+        cpf: localStorage.getItem('dbv_cpf') || "",
+        blood: localStorage.getItem('dbv_blood') || "Não informado",
+        allergies: localStorage.getItem('dbv_allergies') || "",
+        address: localStorage.getItem('dbv_address') || ""
+    };
+
+    let playerXp = parseInt(localStorage.getItem('dbv_player_xp')) || 0;
+    const ranks = [
+        { minXp: 0, title: "Aspirante" },
+        { minXp: 300, title: "Recruta Firme" },
+        { minXp: 700, title: "Explorador Ativo" },
+        { minXp: 1200, title: "Guardião da Lei" },
+        { minXp: 2000, title: "Líder Investido 🌟" }
+    ];
+
+    const MASTER_QR_SECRET = "DBV-LR-AUTORIZADO-2026";
+    let html5QrCode = null;
+
+    function checkAppActivation() {
+        const isActivated = localStorage.getItem('dbv_app_activated');
+        const modal = document.getElementById('activationModal');
+
+        if (isActivated !== "true") {
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            return false;
+        }
+        if (modal) modal.style.display = 'none';
+        return true;
+    }
+
+    function startQrScanner() {
+        document.getElementById('activationFormArea').classList.add('hidden');
+        document.getElementById('qr-reader-container').classList.remove('hidden');
+
+        if (html5QrCode) {
+            html5QrCode.clear().catch(e => {});
+        }
+
+        html5QrCode = new Html5Qrcode("reader");
+
+        // Configuração de câmara simplificada para garantir compatibilidade com o WebView do Android
+        const qrConfig = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" },
+            qrConfig,
+            (decodedText, decodedResult) => {
+                const codigoLido = decodedText.trim();
+
+                // Para a leitura com segurança antes de disparar o alerta
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+
+                    if (codigoLido.startsWith("DBV-LR-AUTORIZADO-") || codigoLido === MASTER_QR_SECRET) {
+                        localStorage.setItem('dbv_app_activated', "true");
+                        localStorage.setItem('dbv_active_license_token', codigoLido);
+
+                        const modal = document.getElementById('activationModal');
+                        if (modal) {
+                            modal.classList.add('hidden');
+                            modal.style.display = 'none';
+                        }
+
+                        alert(`🌟 Aplicativo ativado via QR Code!\nToken: ${codigoLido}`);
+                        initApp();
+                    } else {
+                        alert("QR Code inválido! Este código não pertence à Liderança autorizada.");
+                        document.getElementById('qr-reader-container').classList.add('hidden');
+                        document.getElementById('activationFormArea').classList.remove('hidden');
+                    }
+                }).catch(err => {
+                    console.error("Erro ao parar leitor:", err);
+                });
+            },
+            (errorMessage) => {
+                // Erros de decodificação quadro a quadro são ignorados para manter o app fluido
+            }
+        ).catch((err) => {
+            alert("Não foi possível acessar a câmara. Verifique as permissões do aplicativo no Android.");
+            stopQrScanner();
+        });
+    }
+
+    function stopQrScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+                document.getElementById('qr-reader-container').classList.add('hidden');
+                document.getElementById('activationFormArea').classList.remove('hidden');
+            }).catch(err => {
+                document.getElementById('qr-reader-container').classList.add('hidden');
+                document.getElementById('activationFormArea').classList.remove('hidden');
+            });
+        } else {
+            document.getElementById('qr-reader-container').classList.add('hidden');
+            document.getElementById('activationFormArea').classList.remove('hidden');
+        }
+    }
+
+    function initApp() {
+        if (!checkAppActivation()) return;
+
+        if (!profile.name || profile.name.trim() === "") {
+            profile.name = "Desbravador(a)";
+            profile.age = "10";
+            profile.blood = "Não informado";
+        }
+        loadAllClassesProgress();
+        updatePlayerHUD();
+        renderMap();
+    }
+
+    function changeActiveClasse(key) {
+        if (!checkAppActivation()) return;
+        currentClassKey = key;
+        document.getElementById('headerClassName').innerText = classesData[key].name.toUpperCase();
+        document.querySelectorAll('.repClassNameBadge').forEach(el => el.innerText = classesData[key].name);
+        renderMap();
+    }
+
+    function switchTab(tab) {
+        if (!checkAppActivation()) return;
+        currentTab = tab;
+        const btnFisico = document.getElementById('btnTabFisico');
+        const btnEspiritual = document.getElementById('btnTabEspiritual');
+        const mapBadge = document.getElementById('mapTitleBadge');
+
+        if (tab === 'fisico') {
+            btnFisico.className = "flex-1 bg-amber-600 text-white font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-amber-500";
+            btnEspiritual.className = "flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-slate-700";
+            mapBadge.innerHTML = '<i class="fa-solid fa-person-hiking"></i> Trilha Física e Prática';
+        } else {
+            btnEspiritual.className = "flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-blue-500";
+            btnFisico.className = "flex-1 bg-slate-800 text-slate-300 font-bold py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg transition border-2 border-slate-700";
+            mapBadge.innerHTML = '<i class="fa-solid fa-book-bible"></i> Trilha Espiritual e de Leitura';
+        }
+        renderMap();
+    }
+
+    function loadAllClassesProgress() {
+        for (let key in classesData) {
+            ['fisico', 'espiritual'].forEach(tab => {
+                const saved = localStorage.getItem(`dbv_class_data_${key}_${tab}`);
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        data.forEach(savedQ => {
+                            const q = classesData[key][tab].find(item => item.id === savedQ.id);
+                            if (q) {
+                                q.completed = savedQ.completed;
+                                q.note = savedQ.note || "";
+                                q.fileData = savedQ.fileData || "";
+                                q.fileName = savedQ.fileName || "";
+                                q.signatureData = savedQ.signatureData || "";
+                                q.signatureName = savedQ.signatureName || "";
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Erro ao carregar progresso:", e);
+                    }
+                }
+            });
+        }
+    }
+
+    function saveProgress() {
+        const currentQuests = classesData[currentClassKey][currentTab];
+        const dataToSave = currentQuests.map(q => ({
+            id: q.id,
+            completed: q.completed,
+            note: q.note,
+            fileData: q.fileData,
+            fileName: q.fileName,
+            signatureData: q.signatureData,
+            signatureName: q.signatureName
+        }));
+
+        try {
+            localStorage.setItem(`dbv_class_data_${currentClassKey}_${currentTab}`, JSON.stringify(dataToSave));
+            localStorage.setItem('dbv_player_xp', playerXp);
+        } catch (e) {
+            alert("Atenção: O espaço de armazenamento local ficou cheio. Tente otimizar o tamanho do anexo.");
+            console.error(e);
+        }
+
+        updatePlayerHUD();
+        renderMap();
+    }
+
+    function updatePlayerHUD() {
+        document.getElementById('headerPlayerName').innerText = profile.name ? profile.name : "Clique para Cadastrar";
+        document.getElementById('headerPlayerAge').innerText = `Idade: ${profile.age} anos | Sangue: ${profile.blood}`;
+        document.getElementById('playerXp').innerText = playerXp;
+
+        let currentRank = ranks[0].title;
+        let nextXpGoal = 500;
+        for (let i = 0; i < ranks.length; i++) {
+            if (playerXp >= ranks[i].minXp) {
+                currentRank = ranks[i].title;
+                nextXpGoal = ranks[i+1] ? ranks[i+1].minXp : ranks[i].minXp + 400;
+            }
+        }
+
+        document.getElementById('playerRank').innerText = `Patente: ${currentRank}`;
+        document.getElementById('nextLevelXp').innerText = nextXpGoal;
+        const percentage = Math.min(100, (playerXp / nextXpGoal) * 100);
+        document.getElementById('xpBar').style.width = `${percentage}%`;
+    }
+
+    function renderMap() {
+        if (!checkAppActivation()) return;
+        const container = document.getElementById('questMap');
+        container.innerHTML = '<div class="map-path-line no-print"></div>';
+
+        const quests = classesData[currentClassKey][currentTab];
+        let activeIndex = 0;
+        for (let i = 0; i < quests.length; i++) {
+            if (!quests[i].completed) {
+                activeIndex = i;
+                break;
+            }
+            if (i === quests.length - 1) activeIndex = i;
+        }
+
+        quests.forEach((q, index) => {
+            let isUnlocked = (index === 0) || quests[index - 1].completed;
+
+            let alignClass = "md:self-start md:ml-16";
+            if (index % 2 === 1) alignClass = "md:self-end md:mr-16";
+            if (index === quests.length - 1) alignClass = "md:self-center";
+
+            const nodeWrapper = document.createElement('div');
+            nodeWrapper.className = `flex flex-col items-center my-3 self-center ${alignClass} z-10 w-full md:w-auto px-4`;
+
+            let bgStyle = "bg-slate-800 border-slate-700 text-slate-500";
+            let statusText = "Bloqueado";
+            let iconColor = "text-slate-500";
+
+            if (q.completed) {
+                bgStyle = "bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-900/50";
+                statusText = "Concluído!";
+                iconColor = "text-white";
+            } else if (isUnlocked) {
+                bgStyle = currentTab === 'fisico' ? "bg-amber-600 border-amber-400 text-white shadow-xl shadow-amber-900/60 animate-pulse" : "bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-900/60 animate-pulse";
+                statusText = "Disponível";
+                iconColor = "text-white";
+            }
+
+            let travelerBadge = "";
+            if (index === activeIndex) {
+                travelerBadge = `
+                    <div class="absolute -top-7 bg-yellow-400 text-slate-950 font-bold text-[10px] px-2 py-0.5 rounded-full shadow-lg border border-amber-900 flex items-center gap-1 animate-bounce">
+                        <i class="fa-solid fa-person-hiking"><b>Você está aqui</b></i>
+                    </div>
+                `;
+            }
+
+            nodeWrapper.innerHTML = `
+                <div class="relative flex flex-col items-center">
+                    ${travelerBadge}
+                    <div onclick="${isUnlocked ? `openModal(${q.id})` : `alert('Complete a fase anterior para desbloquear esta etapa do mapa!')`}"
+                         class="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-4 ${bgStyle} flex items-center justify-center text-xl md:text-2xl cursor-pointer map-node shadow-md relative">
+                        <i class="fa-solid ${q.icon} ${iconColor}"></i>
+                        <span class="absolute -bottom-2 -right-2 bg-slate-950 text-amber-400 border border-amber-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">#${q.id}</span>
+                    </div>
+                </div>
+                <div class="mt-2 text-center bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-md max-w-[240px]">
+                    <span class="text-[9px] font-bold text-amber-400 block">${q.cat}</span>
+                    <span class="text-[11px] text-white block font-medium truncate">${q.title}</span>
+                    <span class="text-[9px] font-bold ${q.completed ? 'text-emerald-400' : (isUnlocked ? 'text-amber-300' : 'text-slate-500')}">${statusText}</span>
+                </div>
+            `;
+
+            container.appendChild(nodeWrapper);
+        });
+    }
+
+    function openProfileModal() {
+        if (!checkAppActivation()) return;
+        document.getElementById('inputName').value = profile.name;
+        document.getElementById('inputDob').value = profile.dob;
+        document.getElementById('inputAge').value = profile.age + " anos";
+        document.getElementById('inputFather').value = profile.father;
+        document.getElementById('inputMother').value = profile.mother;
+        document.getElementById('inputCpf').value = profile.cpf;
+        document.getElementById('inputBlood').value = profile.blood;
+        document.getElementById('inputAllergies').value = profile.allergies;
+        document.getElementById('inputAddress').value = profile.address;
+        document.getElementById('profileModal').classList.remove('hidden');
+    }
+
+    function closeProfileModal() { document.getElementById('profileModal').classList.add('hidden'); }
+
+    function calculateAgeFromText(val) {
+        document.getElementById('inputDob').value = val;
+        let parts = val.includes('/') ? val.split('/') : val.split('-');
+        let year = parts.length === 3 ? parseInt(parts[parts.length - 1]) : NaN;
+        if (!isNaN(year) && year > 1900 && year <= new Date().getFullYear()) {
+            let age = new Date().getFullYear() - year;
+            profile.age = age;
+            document.getElementById('inputAge').value = age + " anos";
+        } else {
+            document.getElementById('inputAge').value = "10 anos";
+        }
+    }
+
+    function saveProfile(event) {
+        event.preventDefault();
+        profile.name = document.getElementById('inputName').value.trim();
+        profile.dob = document.getElementById('inputDob').value;
+        profile.father = document.getElementById('inputFather').value.trim();
+        profile.mother = document.getElementById('inputMother').value.trim();
+        profile.cpf = document.getElementById('inputCpf').value.trim();
+        profile.blood = document.getElementById('inputBlood').value;
+        profile.allergies = document.getElementById('inputAllergies').value.trim();
+        profile.address = document.getElementById('inputAddress').value.trim();
+
+        localStorage.setItem('dbv_name', profile.name);
+        localStorage.setItem('dbv_dob', profile.dob);
+        localStorage.setItem('dbv_age', profile.age);
+        localStorage.setItem('dbv_father', profile.father);
+        localStorage.setItem('dbv_mother', profile.mother);
+        localStorage.setItem('dbv_cpf', profile.cpf);
+        localStorage.setItem('dbv_blood', profile.blood);
+        localStorage.setItem('dbv_allergies', profile.allergies);
+        localStorage.setItem('dbv_address', profile.address);
+
+        updatePlayerHUD();
+        closeProfileModal();
+        alert("Ficha salva com sucesso!");
+    }
+
+    function openModal(id) {
+        if (!checkAppActivation()) return;
+        currentQuestId = id;
+        const q = classesData[currentClassKey][currentTab].find(item => item.id === id);
+
+        document.getElementById('modalCategory').innerText = q.cat;
+        document.getElementById('modalTitle').innerText = q.title;
+        document.getElementById('modalDescription').innerText = q.desc;
+        document.getElementById('modalXpBadge').innerText = `+${q.xp} XP`;
+
+        document.getElementById('modalUserNote').value = q.note || "";
+        tempFileData = q.fileData || "";
+        tempFileName = q.fileName || "";
+        updateFilePreviewUI();
+
+        tempSignatureData = q.signatureData || "";
+        tempSignatureName = q.signatureName || "";
+        updateSignaturePreviewUI();
+
+        document.getElementById('questModal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('questModal').classList.add('hidden'); currentQuestId = null; tempFileData = ""; tempFileName = ""; tempSignatureData = ""; tempSignatureName = ""; }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type === 'application/pdf') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempFileData = e.target.result;
+                tempFileName = file.name;
+                updateFilePreviewUI();
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const maxWidth = 600;
+                const scaleSize = maxWidth / img.width;
+
+                canvas.width = img.width > maxWidth ? maxWidth : img.width;
+                canvas.height = img.width > maxWidth ? img.height * scaleSize : img.height;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                tempFileData = canvas.toDataURL('image/jpeg', 0.5);
+                tempFileName = file.name;
+                updateFilePreviewUI();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function updateFilePreviewUI() {
+        const container = document.getElementById('filePreviewContainer');
+        const img = document.getElementById('imgPreview');
+        const info = document.getElementById('filePreviewInfo');
+
+        if (tempFileData) {
+            container.classList.remove('hidden');
+            info.innerHTML = `<i class="fa-solid fa-check"></i> Anexado com sucesso!`;
+            if (tempFileData.startsWith('data:image')) {
+                img.src = tempFileData;
+                img.classList.remove('hidden');
+            } else {
+                img.classList.add('hidden');
+            }
+        } else {
+            container.classList.add('hidden');
+            img.src = "";
+            document.getElementById('modalFileUpload').value = "";
+        }
+    }
+
+    function removeFile() {
+        tempFileData = "";
+        tempFileName = "";
+        updateFilePreviewUI();
+    }
+
+    function handleSignatureCameraCapture(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const pass = prompt("🔒 Área Restrita: Insira a senha do Líder para validar a Assinatura Digital:");
+        if (pass !== "lider123") {
+            alert("Senha incorreta! O envio da assinatura foi cancelado.");
+            event.target.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const maxDim = 400;
+                let w = img.width;
+                let h = img.height;
+                if (w > h) { if (w > maxDim) { h *= maxDim / w; w = maxDim; } }
+                else { if (h > maxDim) { w *= maxDim / h; h = maxDim; } }
+
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] > 200 && data[i+1] > 200 && data[i+2] > 200) {
+                        data[i+3] = 0;
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+
+                tempSignatureData = canvas.toDataURL('image/png');
+                tempSignatureName = file.name.replace(/\.[^/.]+$/, "") + "_assinatura.png";
+                updateSignaturePreviewUI();
+                alert("Assinatura fotografada, limpa e convertida para PNG!");
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function updateSignaturePreviewUI() {
+        const container = document.getElementById('signaturePreviewContainer');
+        const img = document.getElementById('imgSignaturePreview');
+        const badge = document.getElementById('signatureStatusBadge');
+
+        if (tempSignatureData) {
+            container.classList.remove('hidden');
+            img.src = tempSignatureData;
+            badge.innerText = "Assinado";
+            badge.className = "text-[10px] text-emerald-400 font-bold";
+        } else {
+            container.classList.add('hidden');
+            img.src = "";
+            badge.innerText = "Pendente";
+            badge.className = "text-[10px] text-red-400 font-bold";
+            const inputField = document.getElementById('modalSignatureUpload');
+            if (inputField) inputField.value = "";
+        }
+    }
+
+    function removeSignature() {
+        const pass = prompt("🔒 Insira a senha do Líder para remover a Assinatura Digital:");
+        if (pass !== "lider123") {
+            alert("Senha incorreta!");
+            return;
+        }
+        tempSignatureData = "";
+        tempSignatureName = "";
+        updateSignaturePreviewUI();
+    }
+
+    function requestValidation() {
+        if (!checkAppActivation()) return;
+        if (currentQuestId === null) return;
+        const q = classesData[currentClassKey][currentTab].find(item => item.id === currentQuestId);
+
+        q.note = document.getElementById('modalUserNote').value.trim();
+        q.fileData = tempFileData;
+        q.fileName = tempFileName;
+        q.signatureData = tempSignatureData;
+        q.signatureName = tempSignatureName;
+
+        if (isAdvisorMode) {
+            q.completed = !q.completed;
+            if (q.completed) {
+                playerXp += q.xp;
+                triggerCelebration();
+                alert(`Aprovado pelo líder! +${q.xp} XP`);
+            } else {
+                playerXp = Math.max(0, playerXp - q.xp);
+            }
+        } else {
+            if (!q.completed) {
+                q.completed = true;
+                playerXp += q.xp;
+                triggerCelebration();
+                alert("Fase concluída e salva com sucesso no mapa!");
+            } else {
+                alert("Informações atualizadas com sucesso!");
+            }
+        }
+        saveProgress();
+        closeModal();
+    }
+
+    function playSuccessSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+            oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.3);
+
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.6);
+        } catch (e) {
+            console.log("Áudio não suportado.", e);
+        }
+    }
+
+    function triggerCelebration() {
+        playSuccessSound();
+
+        const container = document.body;
+        const colors = ['#f59e0b', '#fbbf24', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+        const particleCount = 100;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.width = `${Math.random() * 12 + 6}px`;
+            particle.style.height = `${Math.random() * 12 + 6}px`;
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px';
+            particle.style.zIndex = '99999';
+            particle.style.pointerEvents = 'none';
+
+            container.appendChild(particle);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 280 + 80;
+            const destX = Math.cos(angle) * velocity;
+            const destY = Math.sin(angle) * velocity - 150;
+
+            particle.animate([
+                { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                { transform: `translate(${destX}px, ${destY}px) scale(0)`, opacity: 0 }
+            ], {
+                duration: Math.random() * 1000 + 2500,
+                easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+            }).onfinish = () => particle.remove();
+        }
+
+        const currentQuests = classesData[currentClassKey][currentTab];
+        const completedCount = currentQuests.filter(q => q.completed).length;
+
+        let targetInterval = (currentTab === 'fisico') ? 5 : 4;
+
+        if (completedCount > 0 && completedCount % targetInterval === 0) {
+            const starsEarned = completedCount / targetInterval;
+
+            setTimeout(() => {
+                alert(`🌟 CONQUISTA DE MÉRITO DESBLOQUEADA! 🌟\n\nVocê atingiu ${completedCount} itens concluídos na trilha ${currentTab.toUpperCase()}!\nVocê ganhou uma ESTRELA AMARELA ⭐️ (Total de estrelas neste marco: ${starsEarned}).\nApresente ao seu Conselheiro para registrar a pontuação de premiação!`);
+            }, 2000);
+        }
+    }
+
+    let currentReportType = 'fisico';
+
+    function switchReportTab(type) {
+        currentReportType = type;
+        const btnFisico = document.getElementById('repTabBtnFisico');
+        const btnEspiritual = document.getElementById('repTabBtnEspiritual');
+        const mainTitle = document.getElementById('repMainTitle');
+        const sectionTitle = document.getElementById('repSectionTitle');
+        const container = document.getElementById('repQuestsContainer');
+
+        container.innerHTML = "";
+
+        if (type === 'fisico') {
+            btnFisico.className = "flex-1 bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs transition border border-amber-500 shadow";
+            btnEspiritual.className = "flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 shadow";
+            mainTitle.innerText = "CLUBE DE DESBRAVADORES - RELATÓRIO FÍSICO E PRÁTICO";
+            sectionTitle.innerText = "Progresso Físico e Prático:";
+            sectionTitle.className = "font-bold text-sm text-amber-800 mb-2";
+
+            classesData[currentClassKey].fisico.forEach(q => {
+                const div = document.createElement('div');
+                div.className = "text-xs flex flex-col gap-1 border-b pb-2 mb-2";
+                const status = q.completed ? '<span class="text-emerald-600 font-bold">[CONCLUÍDO]</span>' : '<span class="text-gray-400">[PENDENTE]</span>';
+                div.innerHTML = `<div>${status} <strong>Fase #${q.id}: ${q.title}</strong> - <span class="text-gray-600">${q.desc}</span></div>`;
+                if (q.note) div.innerHTML += `<div class="text-gray-700 italic bg-gray-50 p-1 rounded">Resumo: ${q.note}</div>`;
+                if (q.fileData) {
+                    if (q.fileData.startsWith('data:image')) {
+                        div.innerHTML += `<div><img src="${q.fileData}" class="max-h-24 rounded border mt-1 object-cover"></div>`;
+                    } else {
+                        div.innerHTML += `<div class="text-blue-600 font-semibold mt-1"><i class="fa-solid fa-file-pdf"></i> Anexo PDF: ${q.fileName || 'Documento Comprobatório'}</div>`;
+                    }
+                }
+                if (q.signatureData) {
+                    div.innerHTML += `<div class="mt-1 border-t pt-1 flex items-center gap-2 bg-yellow-50 p-1 rounded"><span class="font-semibold text-yellow-800">Assinado pelo Líder:</span> <img src="${q.signatureData}" class="max-h-10 object-contain bg-white border p-0.5 rounded"></div>`;
+                }
+                container.appendChild(div);
+            });
+        } else {
+            btnEspiritual.className = "flex-1 bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs transition border border-blue-500 shadow";
+            btnFisico.className = "flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 shadow";
+            mainTitle.innerText = "CLUBE DE DESBRAVADORES - RELATÓRIO ESPIRITUAL E DE LEITURA";
+            sectionTitle.innerText = "Progresso Espiritual e de Leitura:";
+            sectionTitle.className = "font-bold text-sm text-blue-800 mb-2";
+
+            classesData[currentClassKey].espiritual.forEach(q => {
+                const div = document.createElement('div');
+                div.className = "text-xs flex flex-col gap-1 border-b pb-2 mb-2";
+                const status = q.completed ? '<span class="text-emerald-600 font-bold">[CONCLUÍDO]</span>' : '<span class="text-gray-400">[PENDENTE]</span>';
+                div.innerHTML = `<div>${status} <strong>Fase #${q.id}: ${q.title}</strong> - <span class="text-gray-600">${q.desc}</span></div>`;
+                if (q.note) div.innerHTML += `<div class="text-gray-700 italic bg-gray-50 p-1 rounded">Resumo: ${q.note}</div>`;
+                if (q.fileData) {
+                    if (q.fileData.startsWith('data:image')) {
+                        div.innerHTML += `<div><img src="${q.fileData}" class="max-h-24 rounded border mt-1 object-cover"></div>`;
+                    } else {
+                        div.innerHTML += `<div class="text-blue-600 font-semibold mt-1"><i class="fa-solid fa-file-pdf"></i> Anexo PDF: ${q.fileName || 'Documento Comprobatório'}</div>`;
+                    }
+                }
+                if (q.signatureData) {
+                    div.innerHTML += `<div class="mt-1 border-t pt-1 flex items-center gap-2 bg-yellow-50 p-1 rounded"><span class="font-semibold text-yellow-800">Assinado pelo Líder:</span> <img src="${q.signatureData}" class="max-h-10 object-contain bg-white border p-0.5 rounded"></div>`;
+                }
+                container.appendChild(div);
+            });
+        }
+    }
+
+    function openReportModal() {
+        if (!checkAppActivation()) return;
+        document.getElementById('repName').innerText = profile.name || "Não informado";
+        document.getElementById('repAge').innerText = profile.age ? profile.age + " anos" : "-";
+        document.getElementById('repFather').innerText = profile.father || "-";
+        document.getElementById('repMother').innerText = profile.mother || "-";
+        document.getElementById('repCpf').innerText = profile.cpf || "-";
+        document.getElementById('repBlood').innerText = profile.blood || "-";
+        document.getElementById('repAllergies').innerText = profile.allergies || "Nenhuma";
+
+        document.querySelectorAll('.repClassNameBadge').forEach(el => el.innerText = classesData[currentClassKey].name);
+
+        switchReportTab('fisico');
+        document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function closeReportModal() { document.getElementById('reportModal').classList.add('hidden'); }
+
+    function openAdvisorModal() {
+        if (!checkAppActivation()) return;
+        document.getElementById('advisorModal').classList.remove('hidden');
+    }
+    function closeAdvisorModal() { document.getElementById('advisorModal').classList.add('hidden'); document.getElementById('advisorPasswordInput').value = ""; }
+    function verifyAdvisorLogin() {
+        const pass = document.getElementById('advisorPasswordInput5')?.value || document.getElementById('advisorPasswordInput').value;
+        if (pass === "lider123") {
+            isAdvisorMode = true;
+            alert("Modo Conselheiro ativado!");
+            closeAdvisorModal();
+            if (currentQuestId !== null) openModal(currentQuestId);
+        } else {
+            alert("Senha incorreta!");
+        }
+    }
+
+    initApp();
+</script>
+</body>
+</html>
